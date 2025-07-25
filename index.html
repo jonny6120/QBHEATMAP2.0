@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QB Passing Heat Map – Colored Results</title>
+<style>
+    body{margin:0;background:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;}
+    h2{margin:1rem 0 0.6rem;}
+    #fieldContainer{position:relative;width:900px;height:540px;background:#fff;border:2px solid #000;}
+    canvas.background{position:absolute;top:0;left:0;z-index:1;}
+    #heatmapContainer{position:absolute;inset:0;z-index:2;pointer-events:none;}
+    canvas.points{position:absolute;top:0;left:0;z-index:3;pointer-events:none;}
+    .panel{width:900px;margin-top:1rem;padding:0.8rem 1rem;background:#f7f7f7;border:1px solid #ccc;border-radius:6px;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;}
+    .panel label{display:flex;flex-direction:column;font-size:0.8rem;color:#333;}
+    .panel input,.panel select{padding:0.25rem 0.4rem;font-size:0.9rem;}
+    .panel button{padding:0.45rem 1rem;border:none;background:#222;color:#fff;border-radius:4px;cursor:pointer;font-size:0.85rem;}
+    table{width:900px;border-collapse:collapse;margin-top:0.8rem;font-size:0.85rem;}
+    th,td{border:1px solid #999;padding:0.4rem 0.5rem;text-align:center;}
+    th{background:#eaeaea;font-weight:600;}
+    td .del{cursor:pointer;color:#c00;font-weight:700;}
+  
+    @media (max-width: 768px) {
+      #fieldContainer {
+        width: 100%;
+        height: auto;
+      }
+      canvas.background, canvas.points {
+        width: 100% !important;
+        height: auto !important;
+      }
+      .panel {
+        width: 95%;
+        font-size: 0.9rem;
+        padding: 0.6rem;
+      }
+      table {
+        width: 100%;
+        overflow-x: auto;
+        display: block;
+      }
+      th, td {
+        font-size: 0.8rem;
+        padding: 0.3rem;
+      }
+    }
+
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+    
+    @media (max-width: 768px) {
+      .panel {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+
+      .panel label {
+        width: 100%;
+        flex-direction: column;
+      }
+
+      .panel input,
+      .panel select,
+      .panel button {
+        width: 100% !important;
+        box-sizing: border-box;
+        margin-bottom: 0.5rem;
+      }
+
+      button {
+        font-size: 1rem;
+      }
+
+      #fieldContainer {
+        height: auto;
+        aspect-ratio: 5 / 3;
+      }
+
+      canvas.background,
+      canvas.points {
+        height: auto !important;
+        width: 100% !important;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .panel {
+        flex-direction: column !important;
+        align-items: stretch !important;
+      }
+
+      .panel label {
+        width: 100%;
+        flex-direction: column;
+      }
+
+      .panel input,
+      .panel select,
+      .panel button {
+        width: 100% !important;
+        box-sizing: border-box;
+        margin-bottom: 0.5rem;
+      }
+
+      #fieldContainer {
+        width: 100%;
+        aspect-ratio: 5 / 3;
+        max-width: 900px;
+      }
+
+      canvas.background,
+      canvas.points {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      #heatmapContainer {
+        width: 100% !important;
+        height: 100% !important;
+      }
+
+      table {
+        font-size: 0.8rem;
+      }
+
+      th, td {
+        padding: 0.25rem;
+      }
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    
+    /* Desktop-first defaults */
+    #fieldContainer {
+      width: 900px;
+      height: 540px;
+    }
+
+    canvas.background,
+    canvas.points,
+    #heatmapContainer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .panel {
+      width: 900px;
+      margin-top: 1rem;
+      padding: 0.8rem 1rem;
+      background: #f7f7f7;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+    }
+
+    .panel label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.8rem;
+      color: #333;
+    }
+
+    .panel input,
+    .panel select {
+      padding: 0.25rem 0.4rem;
+      font-size: 0.9rem;
+    }
+
+    .panel button {
+      padding: 0.45rem 1rem;
+      border: none;
+      background: #222;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    table {
+      width: 900px;
+      border-collapse: collapse;
+      margin-top: 0.8rem;
+      font-size: 0.85rem;
+    }
+
+    th,
+    td {
+      border: 1px solid #999;
+      padding: 0.4rem 0.5rem;
+      text-align: center;
+    }
+
+    th {
+      background: #eaeaea;
+      font-weight: 600;
+    }
+
+    td .del {
+      cursor: pointer;
+      color: #c00;
+      font-weight: 700;
+    }
+
+    /* Mobile overrides */
+    @media (max-width: 768px) {
+      .panel {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 95% !important;
+        padding: 0.6rem !important;
+      }
+
+      .panel label {
+        width: 100%;
+        flex-direction: column;
+      }
+
+      .panel input,
+      .panel select,
+      .panel button {
+        width: 100% !important;
+        box-sizing: border-box;
+        margin-bottom: 0.5rem;
+      }
+
+      #fieldContainer {
+        width: 100%;
+        max-width: 900px;
+        aspect-ratio: 5 / 3;
+      }
+
+      canvas.background,
+      canvas.points,
+      #heatmapContainer {
+        height: 100% !important;
+        width: 100% !important;
+      }
+
+      table {
+        width: 100%;
+        display: block;
+        overflow-x: auto;
+      }
+
+      th,
+      td {
+        font-size: 0.8rem;
+        padding: 0.25rem;
+      }
+    }
+
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+    </style>
+</head>
+<body>
+<h2>QB Passing Heat Map</h2>
+<div class="panel" id="teamTabs">
+<label style="display:none;">Team:
+    </label>
+</div>
+<label style="display:none;">Team:
+    <select <option="" id="teamSelect" style="display:none;" value="Team A">Team A
+<option value="Team B">Team B</option>
+<option value="Team C">Team C</option>
+</select>
+</label>
+<div id="fieldContainer">
+<canvas class="background"></canvas>
+<div id="heatmapContainer"></div>
+<canvas class="points"></canvas>
+</div>
+<form class="panel" id="addForm" onsubmit="return false;">
+<label>X (yd)<input id="xInput" max="53.3" min="0" required="" step="0.1" type="number"/></label>
+<label>Y (yd)<input id="yInput" max="45" min="-10" required="" step="0.1" type="number"/></label>
+<label>Quarter<select id="qtr"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+<label>Down<select id="down"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+<label>Distance<input id="dist" max="30" min="1" required="" step="1" type="number"/></label>
+<label>Hash<select id="hash"><option>Left</option><option>Middle</option><option>Right</option></select></label>
+<label>Result<select id="result"><option>Complete</option><option>Incomplete</option><option>TD</option><option>INT</option></select></label>
+<label>Personnel<input id="personnel" placeholder="11" type="text"/></label>
+<label>Formation<input id="formation" placeholder="Trips" type="text"/></label>
+<label>Week<input id="week" max="18" min="1" type="number"/></label>
+<label>Player<input id="player" placeholder="Receiver" type="text"/></label>
+<label>Coverage<input id="coverage" placeholder="Cover 3" type="text"/></label>
+<button id="addBtn">Add</button>
+</form>
+<div class="panel" id="filterPanel">
+<label>Quarter<select id="fqtr"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+<label>Down<select id="fdown"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+<label>Result<select id="fres"><option value="">All</option><option>Complete</option><option>Incomplete</option><option>TD</option><option>INT</option></select></label>
+<label>Distance<input id="fdist" max="30" min="1" placeholder="All" type="number"/></label>
+<label>Hash<select id="fhash"><option value="">All</option><option>Left</option><option>Middle</option><option>Right</option></select></label>
+<label>Personnel<input id="fper" placeholder="All" type="text"/></label>
+<label>Formation<input id="fform" placeholder="All" type="text"/></label>
+<label>Week<input id="fwk" max="18" min="1" placeholder="All" type="number"/></label>
+<label>Player<input id="fplayer" placeholder="All" type="text"/></label>
+<label>Coverage<input id="fcov" placeholder="All" type="text"/></label>
+<button id="applyFilter">Apply Filter</button>
+<button id="resetFilter" style="background:#555;" type="button">Reset</button>
+</div>
+<!-- Import/Export Panel -->
+<div class="panel">
+<button id="exportBtn">Export Passes</button>
+<input accept=".csv" id="importInput" style="display:none;" type="file"/>
+<button id="importBtn">Import Passes</button>
+<button id="clearBtn" style="background:#b33;">Clear All</button>
+</div>
+<table id="passTable"><thead><tr><th>#</th><th>X</th><th>Y</th><th>Qtr</th><th>Dwn</th><th>Dist</th><th>Hash</th><th>Res</th><th>Pers</th><th>Form</th><th>Wk</th><th>Player</th><th>Cov</th><th></th><th></th></tr></thead><tbody></tbody></table>
+<script>function drawField(){
+    bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+    yardLines.forEach(y=>{
+      const py=losY-y*pxPerYard;
+      bgCtx.strokeStyle=y%10===0?'#8a8a8a':'#cfcfcf';bgCtx.lineWidth=y%10===0?2:1;
+      bgCtx.beginPath();bgCtx.moveTo(0,py);bgCtx.lineTo(bgCanvas.width,py);bgCtx.stroke();
+      bgCtx.fillStyle='#444';bgCtx.font='12px Arial';bgCtx.fillText(y.toString(),5,py-4);bgCtx.fillText(y.toString(),bgCanvas.width-25,py-4);
+    });
+    const cx=bgCanvas.width/2;
+    [cx-hashOffset,cx+hashOffset].forEach(x=>{bgCtx.strokeStyle='#444';bgCtx.lineWidth=3;bgCtx.beginPath();bgCtx.moveTo(x,0);bgCtx.lineTo(x,bgCanvas.height);bgCtx.stroke();});
+    bgCtx.strokeStyle='#000';bgCtx.lineWidth=2;bgCtx.beginPath();bgCtx.moveTo(0,losY);bgCtx.lineTo(bgCanvas.width,losY);bgCtx.stroke();
+  }
+  drawField();</script>
+<script>
+  const fieldContainer = document.getElementById('fieldContainer');
+  const bgCanvas = document.querySelector('canvas.background');
+  const bgCtx = bgCanvas.getContext('2d');
+  const ptCanvas = document.querySelector('canvas.points');
+  const ptCtx = ptCanvas.getContext('2d');
+  const yardLines = [45,40,35,30,25,20,15,10,5,0,-5,-10];
+  const pxPerYard = 8;
+  const losY = 400;
+  const hashOffset = 180;
+
+  function drawField(){
+    bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+    yardLines.forEach(y=>{
+      const py=losY-y*pxPerYard;
+      bgCtx.strokeStyle=y%10===0?'#8a8a8a':'#cfcfcf';
+      bgCtx.lineWidth=y%10===0?2:1;
+      bgCtx.beginPath();bgCtx.moveTo(0,py);bgCtx.lineTo(bgCanvas.width,py);bgCtx.stroke();
+      bgCtx.fillStyle='#444';
+      bgCtx.font='12px Arial';
+      bgCtx.fillText(y.toString(),5,py-4);
+      bgCtx.fillText(y.toString(),bgCanvas.width-25,py-4);
+    });
+    const cx=bgCanvas.width/2;
+    [cx-hashOffset,cx+hashOffset].forEach(x=>{
+      bgCtx.strokeStyle='#444';
+      bgCtx.lineWidth=3;
+      bgCtx.beginPath();
+      bgCtx.moveTo(x,0);
+      bgCtx.lineTo(x,bgCanvas.height);
+      bgCtx.stroke();
+    });
+    bgCtx.strokeStyle='#000';
+    bgCtx.lineWidth=2;
+    bgCtx.beginPath();
+    bgCtx.moveTo(0,losY);
+    bgCtx.lineTo(bgCanvas.width,losY);
+    bgCtx.stroke();
+  }
+
+  drawField();
+</script>
+<script>
+  function yardsToPx(x,y){
+    return {
+      x: (x / 53.3) * bgCanvas.width,
+      y: losY - y * pxPerYard
+    };
+  }
+
+  function pxToYards(px,py){
+    return {
+      x: (px / bgCanvas.width) * 53.3,
+      y: (losY - py) / pxPerYard
+    };
+  }
+
+  fieldContainer.addEventListener('click', function(e) {
+    const rect = bgCanvas.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const {x, y} = pxToYards(px, py);
+    document.getElementById('xInput').value = x.toFixed(1);
+    document.getElementById('yInput').value = y.toFixed(1);
+  });
+</script>
+<script>
+  const passes = [];
+  const colorMap = {
+    "Complete": "#3cb043",
+    "TD": "#3cb043",
+    "Incomplete": "#d32f2f",
+    "INT": "#ffbf00"
+  };
+
+  function render() {
+    ptCtx.clearRect(0, 0, ptCanvas.width, ptCanvas.height);
+    const tbody = document.querySelector('#passTable tbody');
+    tbody.innerHTML = '';
+
+    passes.forEach((p, i) => {
+      const { x, y } = yardsToPx(p.x, p.y);
+      ptCtx.fillStyle = colorMap[p.res] || "#000";
+      ptCtx.beginPath();
+      ptCtx.arc(x, y, 6, 0, 2 * Math.PI);
+      ptCtx.fill();
+      ptCtx.strokeStyle = "#000";
+      ptCtx.lineWidth = 1;
+      ptCtx.stroke();
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${p.x.toFixed(1)}</td>
+        <td>${p.y.toFixed(1)}</td>
+        <td>${p.q}</td>
+        <td>${p.d}</td>
+        <td>${p.dist}</td>
+        <td>${p.hash}</td>
+        <td>${p.res}</td>
+        <td>${p.per}</td>
+        <td>${p.form}</td>
+        <td>${p.wk}</td>
+        <td>${p.player}</td>
+        <td>${p.cov}</td>
+        <td class="edit" data-i="${i}">✎</td>
+        <td class="del" data-i="${i}">✕</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  document.getElementById("addForm").addEventListener("submit", () => {
+    const pass = {
+      x: parseFloat(document.getElementById("xInput").value),
+      y: parseFloat(document.getElementById("yInput").value),
+      q: document.getElementById("qtr").value,
+      d: document.getElementById("down").value,
+      dist: parseInt(document.getElementById("dist").value),
+      hash: document.getElementById("hash").value,
+      res: document.getElementById("result").value,
+      per: document.getElementById("personnel").value,
+      form: document.getElementById("formation").value,
+      wk: document.getElementById("week").value,
+      player: document.getElementById("player").value,
+      cov: document.getElementById("coverage").value
+    };
+    if (!isFinite(pass.x) || !isFinite(pass.y)) return;
+    passes.push(pass);
+    render();
+    document.getElementById("addForm").reset();
+  });
+
+  document.querySelector('#passTable tbody').addEventListener('click', e => {
+    const index = parseInt(e.target.dataset.i);
+    if (e.target.classList.contains('edit')) {
+      const p = passes[index];
+      document.getElementById("xInput").value = p.x;
+      document.getElementById("yInput").value = p.y;
+      document.getElementById("qtr").value = p.q;
+      document.getElementById("down").value = p.d;
+      document.getElementById("dist").value = p.dist;
+      document.getElementById("hash").value = p.hash;
+      document.getElementById("result").value = p.res;
+      document.getElementById("personnel").value = p.per;
+      document.getElementById("formation").value = p.form;
+      document.getElementById("week").value = p.wk;
+      document.getElementById("player").value = p.player;
+      document.getElementById("coverage").value = p.cov;
+      passes.splice(index, 1);
+      render();
+    } else if (e.target.classList.contains('del')) {
+      passes.splice(index, 1);
+      render();
+    }
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    if (confirm("Are you sure you want to delete all data?")) {
+      passes.length = 0;
+      render();
+    }
+  });
+
+  render();
+</script>
+<script>
+  // Save to localStorage
+  function saveToStorage() {
+    localStorage.setItem("qbPassData", JSON.stringify(passes));
+  }
+
+  // Load from localStorage
+  function loadFromStorage() {
+    const stored = localStorage.getItem("qbPassData");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          passes.length = 0;
+          parsed.forEach(p => {
+            if (typeof p.x === 'number' && typeof p.y === 'number') passes.push(p);
+          });
+        }
+      } catch {
+        console.error("Invalid data in storage");
+      }
+    }
+  }
+
+  // Wrap existing render and form logic
+  loadFromStorage();
+  render();
+
+  document.getElementById("addForm").addEventListener("submit", () => {
+    // data entry already handled
+    saveToStorage();
+  });
+
+  document.querySelector('#passTable tbody').addEventListener('click', e => {
+    if (e.target.classList.contains('edit') || e.target.classList.contains('del')) {
+      saveToStorage();
+    }
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", () => {
+    localStorage.removeItem("qbPassData");
+  });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const headers = ["x", "y", "q", "d", "dist", "hash", "res", "per", "form", "wk", "player", "cov"];
+    const csv = [headers.join(",")].concat(
+      passes.map(p => headers.map(h => JSON.stringify(p[h] || "")).join(","))
+    ).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "passes.csv";
+    a.click();
+  });
+
+  document.getElementById("importBtn").addEventListener("click", () => {
+    document.getElementById("importInput").click();
+  });
+
+  document.getElementById("importInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        try {
+          passes.length = 0;
+          results.data.forEach(p => {
+            if (p.x && p.y) {
+              passes.push({
+                x: parseFloat(p.x),
+                y: parseFloat(p.y),
+                q: p.q,
+                d: p.d,
+                dist: parseInt(p.dist),
+                hash: p.hash,
+                res: p.res,
+                per: p.per,
+                form: p.form,
+                wk: p.wk,
+                player: p.player,
+                cov: p.cov
+              });
+            }
+          });
+          saveToStorage();
+          render();
+        } catch {
+          alert("Invalid CSV structure.");
+        }
+      }
+    });
+  });
+</script>
+<script>
+  const filter = {};
+
+  document.getElementById("applyFilter").addEventListener("click", () => {
+    filter.q = document.getElementById("fqtr").value;
+    filter.d = document.getElementById("fdown").value;
+    filter.res = document.getElementById("fres").value;
+    filter.dist = document.getElementById("fdist").value;
+    filter.hash = document.getElementById("fhash").value;
+    filter.per = document.getElementById("fper").value;
+    filter.form = document.getElementById("fform").value;
+    filter.wk = document.getElementById("fwk").value;
+    filter.player = document.getElementById("fplayer").value;
+    filter.cov = document.getElementById("fcov").value;
+    render();
+  });
+
+  document.getElementById("resetFilter").addEventListener("click", () => {
+    document.getElementById("fqtr").value = "";
+    document.getElementById("fdown").value = "";
+    document.getElementById("fres").value = "";
+    document.getElementById("fdist").value = "";
+    document.getElementById("fhash").value = "";
+    document.getElementById("fper").value = "";
+    document.getElementById("fform").value = "";
+    document.getElementById("fwk").value = "";
+    document.getElementById("fplayer").value = "";
+    document.getElementById("fcov").value = "";
+    for (let key in filter) filter[key] = "";
+    render();
+  });
+
+  function matchesFilter(p) {
+    for (const key in filter) {
+      if (filter[key] === "") continue;
+      if (p[key].toString() !== filter[key]) return false;
+    }
+    return true;
+  }
+
+  const originalRender = render;
+  render = function () {
+    ptCtx.clearRect(0, 0, ptCanvas.width, ptCanvas.height);
+    const tbody = document.querySelector('#passTable tbody');
+    tbody.innerHTML = '';
+
+    passes.forEach((p, i) => {
+      if (!matchesFilter(p)) return;
+      const { x, y } = yardsToPx(p.x, p.y);
+      ptCtx.fillStyle = colorMap[p.res] || "#000";
+      ptCtx.beginPath();
+      ptCtx.arc(x, y, 6, 0, 2 * Math.PI);
+      ptCtx.fill();
+      ptCtx.strokeStyle = "#000";
+      ptCtx.lineWidth = 1;
+      ptCtx.stroke();
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${p.x.toFixed(1)}</td>
+        <td>${p.y.toFixed(1)}</td>
+        <td>${p.q}</td>
+        <td>${p.d}</td>
+        <td>${p.dist}</td>
+        <td>${p.hash}</td>
+        <td>${p.res}</td>
+        <td>${p.per}</td>
+        <td>${p.form}</td>
+        <td>${p.wk}</td>
+        <td>${p.player}</td>
+        <td>${p.cov}</td>
+        <td class="edit" data-i="${i}">✎</td>
+        <td class="del" data-i="${i}">✕</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+</script>
+</body>
+</html>
