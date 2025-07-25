@@ -281,6 +281,34 @@
       max-width: 100%;
       height: auto;
     }
+    
+    /* FIELD-SPECIFIC RESPONSIVE FIXES ONLY */
+    #fieldContainer {
+      width: 100%;
+      max-width: 900px;
+      aspect-ratio: 5 / 3;
+      position: relative;
+      background: #fff;
+      border: 2px solid #000;
+    }
+
+    canvas.background,
+    canvas.points,
+    #heatmapContainer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    @media (max-width: 768px) {
+      #fieldContainer {
+        width: 100%;
+        max-width: 100%;
+        aspect-ratio: 5 / 3;
+      }
+    }
     </style>
 </head>
 <body>
@@ -691,6 +719,21 @@
       tbody.appendChild(row);
     });
   }
+</script>
+
+<script>
+  function resizeCanvasesAndRedraw() {
+    bgCanvas.width = bgCanvas.clientWidth;
+    bgCanvas.height = bgCanvas.clientHeight;
+    ptCanvas.width = ptCanvas.clientWidth;
+    ptCanvas.height = ptCanvas.clientHeight;
+    drawField();
+    render();
+  }
+
+  // On window resize and load
+  window.addEventListener("resize", resizeCanvasesAndRedraw);
+  window.addEventListener("load", resizeCanvasesAndRedraw);
 </script>
 </body>
 </html>

@@ -1,23 +1,26 @@
-# QB Passing Map
+# QB Passing Map (Responsive Version)
 
-A single-page interactive quarterback passing chart.
+This is a single-page interactive quarterback passing chart web app.
 
 ## Features
-- Clickable football field with X/Y plotting
-- Filter panel (quarter, down, result, etc.)
-- Import/export CSV functionality
-- Data persists using localStorage
+- Click-to-place pass plotting with visual markers
+- Editable pass attributes (quarter, down, hash, result, etc.)
+- Filter panel with full filtering capabilities
+- Import/Export CSV support
+- LocalStorage persistence (pass data survives page refresh)
+- Fully responsive for mobile and desktop
+- Dynamic canvas scaling for proper field rendering on all devices
 
 ## Deployment
-You can deploy this on [Vercel](https://vercel.com) or GitHub Pages.
 
-### Vercel
-1. Clone this repo or upload to GitHub.
-2. Go to https://vercel.com/import and import your repo.
-3. Vercel will auto-detect and serve the `index.html` as a static site.
+### Option 1: Vercel
+1. Push this folder to a GitHub repository
+2. Go to https://vercel.com/import and import your GitHub repo
+3. Vercel will automatically deploy it as a static site
 
-### GitHub Pages (optional)
-1. Push to a GitHub repo.
-2. Go to repo settings → Pages → Select branch → `/root`.
+### Option 2: GitHub Pages
+1. Push to a GitHub repository
+2. Go to Repo Settings → Pages → Source: main → `/root`
+3. GitHub will host the page at https://<your-username>.github.io/<repo-name>
 
 Enjoy!
